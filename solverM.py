@@ -50,10 +50,15 @@ def main():
 
         def handle_response(response):
             nonlocal intercepted_audio_url
-            # Listen for HTTP responses containing audio files or specific MTCaptcha streaming endpoints
-            if "audio" in response.headers.get("content-type", "") or ".wav" in response.url or ".mp3" in response.url:
-                if "mtcaptcha" in response.url.lower() or "audio" in response.url.lower():
-                    intercepted_audio_url = response.url
+            url = response.url.lower()
+            
+            # SPY MODE: Print every MTCaptcha-related network request
+            if "mtcaptcha.com" in url or "service" in url:
+                print(f"[SPY] Traffic -> {url[:100]}...")
+                
+            # Expanded net to catch hidden streams
+            if "audio" in url or ".wav" in url or "getchallenge" in url or "media" in url:
+                intercepted_audio_url = response.url
 
         # Attach the network listener to the page BEFORE we navigate or click
         page.on("response", handle_response)
