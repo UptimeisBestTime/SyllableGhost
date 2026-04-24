@@ -125,10 +125,7 @@ def main():
         except Exception as e:
             print(f"[!] Execution failed: {e}")
         
-        finally:
-            if os.path.exists(AUDIO_FILENAME):
-                os.remove(AUDIO_FILENAME)
-            browser.close()
+        
 
 if __name__ == "__main__":
     main()
