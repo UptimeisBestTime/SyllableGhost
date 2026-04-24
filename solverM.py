@@ -3,24 +3,39 @@ import time
 import random
 import requests
 import whisper
+import json
+import base64
 from playwright.sync_api import sync_playwright
+
 
 # --- Configuration ---
 WHISPER_MODEL = "tiny"
 # Replace this with the URL of the site where you are testing the MTCaptcha widget
 TARGET_URL = "https://www.mtcaptcha.com/test-multiple-captcha" 
-AUDIO_FILENAME = "mt_payload.wav"
+AUDIO_FILENAME = "mt_payload.mp3"
 
 def random_delay(min_sec=1.0, max_sec=2.5):
     """Simulate human reaction times to avoid behavioral bot flagging."""
     time.sleep(random.uniform(min_sec, max_sec))
 
 def download_audio(url, filename):
-    print(f"[*] Downloading intercepted audio payload...")
+    print(f"[*] Downloading and decrypting MTCaptcha JSON payload...")
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
     response = requests.get(url, headers=headers)
+    
+    # 1. Parse the JSON envelope
+    data = response.json()
+    
+    # 2. Extract the Base64 text string
+    # Based on your screenshot, the path is: result -> aud -> audio64
+    b64_audio = data["result"]["aud"]["audio64"]
+    
+    # 3. Decode the text back into raw binary audio
+    audio_bytes = base64.b64decode(b64_audio)
+    
+    # 4. Save the real MP3 to disk
     with open(filename, "wb") as f:
-        f.write(response.content)
+        f.write(audio_bytes)
 
 def transcribe_audio(filename):
     print(f"[*] Loading Whisper '{WHISPER_MODEL}' model and filtering noise...")
@@ -124,7 +139,10 @@ def main():
 
         except Exception as e:
             print(f"[!] Execution failed: {e}")
-        
+        finally:
+            if os.path.exists(AUDIO_FILENAME):
+                os.remove(AUDIO_FILENAME)
+            browser.close()
         
 
 if __name__ == "__main__":
